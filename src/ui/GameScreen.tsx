@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { SCOPE_HINT, SCOPE_LEVELS, getScope, previewAction, validateAction } from '../engine'
+import { SCOPE_HINT, SCOPE_LEVELS, getScope, previewAction, sprintUpkeep, validateAction } from '../engine'
 import type { ActionType, FeatureId } from '../engine'
 import ActionPanel from './ActionPanel'
 import FeatureCard from './FeatureCard'
@@ -97,10 +97,16 @@ export default function GameScreen() {
           <h1 className="game-title">{run.concept.title}</h1>
           <div className="genre-tag">{run.concept.genre}</div>
         </div>
-        <SprintTrack sprint={run.sprint} />
+        <SprintTrack sprint={run.sprint} total={run.config.totalSprints} />
       </header>
 
-      <ResourceBar money={run.money} morale={run.morale} hype={run.hype} bugs={run.bugs} />
+      <ResourceBar
+        upkeep={sprintUpkeep(scope.level)}
+        money={run.money}
+        morale={run.morale}
+        hype={run.hype}
+        bugs={run.bugs}
+      />
 
       <main className="stage">
         <section className="features" aria-label="Features">

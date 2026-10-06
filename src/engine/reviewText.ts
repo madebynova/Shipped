@@ -1,4 +1,3 @@
-import { TOTAL_SPRINTS } from './config'
 import type { Review, ReviewBand, RunState } from './types'
 
 // Review prose is assembled from rules that look at the real final state.
@@ -114,9 +113,9 @@ export function buildVerdict(state: RunState, review: Review): string[] {
 
   // Timing
   if (review.forced) {
-    add(20, 'The sprint-8 deadline arrived and the build shipped exactly as it stood.')
-  } else if (review.shippedSprint < TOTAL_SPRINTS) {
-    const early = TOTAL_SPRINTS - review.shippedSprint
+    add(20, `The sprint-${state.config.totalSprints} deadline arrived and the build shipped exactly as it stood.`)
+  } else if (review.shippedSprint < state.config.totalSprints) {
+    const early = state.config.totalSprints - review.shippedSprint
     add(15, `It shipped in sprint ${review.shippedSprint}, ${early} ${early === 1 ? 'sprint' : 'sprints'} early.`)
   }
 

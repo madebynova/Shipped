@@ -1,8 +1,8 @@
 // Headless "players" used by the balance tests. They only talk to the public
 // engine API, exactly like the UI does, so they double as a check that a whole
 // run can be driven without React.
-import { applyAction, canShip, createRun, endSprint, shipGame } from '../index'
-import type { Action, Concept, FeatureId, RunState } from '../index'
+import { FULL_RUN, applyAction, canShip, createRun, endSprint, shipGame } from '../index'
+import type { Action, Concept, FeatureId, RunConfig, RunState } from '../index'
 
 export const TEST_CONCEPT: Concept = {
   title: 'Iron Pulse',
@@ -13,8 +13,13 @@ export const TEST_CONCEPT: Concept = {
 /** A policy looks at the state and returns the next action, or 'ship' to release now. */
 export type Policy = (state: RunState) => Action | 'ship'
 
-export function playRun(policy: Policy, concept: Concept = TEST_CONCEPT, seed = 1): RunState {
-  let state = createRun(concept, seed)
+export function playRun(
+  policy: Policy,
+  concept: Concept = TEST_CONCEPT,
+  seed = 1,
+  config: RunConfig = FULL_RUN,
+): RunState {
+  let state = createRun(concept, seed, config)
   for (let guard = 0; guard < 200 && state.phase === 'developing'; guard++) {
     if (state.actionsLeft === 0) {
       state = endSprint(state)
@@ -63,11 +68,16 @@ export function greedyBuilder(order: FeatureId[]): Policy {
 }
 
 /** Always HYPE (then REST once hype is capped). Never builds anything. */
+/** Builds the cheapest-to-start feature that exists in this run (any feature set). */
+function anyBuild(state: RunState): Action[] {
+  return [...state.features].reverse().map((f) => ({ type: 'BUILD' as const, featureId: f.id }))
+}
+
 export const hypeSpammer: Policy = (state) =>
-  firstLegal(state, [{ type: 'HYPE' }, { type: 'REST' }, { type: 'BUILD', featureId: 'vehicles' }, { type: 'BUILD', featureId: 'physics' }])
+  firstLegal(state, [{ type: 'HYPE' }, { type: 'REST' }, ...anyBuild(state)])
 
 export const restOnly: Policy = (state) =>
-  firstLegal(state, [{ type: 'REST' }, { type: 'HYPE' }, { type: 'BUILD', featureId: 'vehicles' }, { type: 'BUILD', featureId: 'physics' }])
+  firstLegal(state, [{ type: 'REST' }, { type: 'HYPE' }, ...anyBuild(state)])
 
 export interface BalancedOptions {
   features: FeatureId[]

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { SHIP_UNLOCK_SPRINT, TOTAL_SPRINTS, canShip } from '../engine'
+import { SHIP_UNLOCK_SPRINT, canShip, getScope, sprintUpkeep } from '../engine'
 import type { RunState } from '../engine'
 import { formatMoney, moneyStatus } from './format'
 
@@ -34,8 +34,8 @@ export default function ShipBar({ run, onShip }: Props) {
 
   const built = run.features.filter((f) => f.state !== 'PLANNED').length
   const polished = run.features.filter((f) => f.state === 'POLISHED').length
-  const sprintsLeft = TOTAL_SPRINTS - run.sprint
-  const status = moneyStatus(run.money)
+  const sprintsLeft = run.config.totalSprints - run.sprint
+  const status = moneyStatus(run.money, sprintUpkeep(getScope(run.features).level))
   const urgency = run.sprint >= 7 ? 'late' : run.sprint >= 6 ? 'mid' : 'early'
 
   return (

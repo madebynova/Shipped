@@ -22,6 +22,18 @@ export type ReviewBand =
   | 'DISASTER'
   | 'LEGENDARY FAILURE'
 
+/** What kind of run this is. The tutorial is a short, simplified run. */
+export type RunKind = 'full' | 'tutorial'
+
+/** The rules of a run that differ between the full game and the tutorial. */
+export interface RunConfig {
+  kind: RunKind
+  /** Sprints before shipping is forced. */
+  totalSprints: number
+  /** Which features exist in this run, or null for all of them. */
+  featureIds: readonly FeatureId[] | null
+}
+
 export interface Concept {
   title: string
   idea: string
@@ -94,11 +106,12 @@ export type Phase = 'developing' | 'shipped'
 
 export interface RunState {
   seed: number
+  config: RunConfig
   /** Internal RNG state. Only used for flavour text; never for scores. */
   rng: number
   concept: Concept
   phase: Phase
-  /** 1..TOTAL_SPRINTS */
+  /** 1..config.totalSprints */
   sprint: number
   actionsLeft: number
   money: number

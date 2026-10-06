@@ -2,6 +2,7 @@
 export * from './types'
 export * from './config'
 export { randomSeed } from './rng'
+export { sprintUpkeep, BASE_UPKEEP, SCOPE_UPKEEP } from './economy'
 export { buildCost, getScope, scopeLoad, scopeLevelFor, SCOPE_LEVELS, SCOPE_HINT, SCOPE_EFFICIENCY, BUILD_POWER } from './scope'
 export { moraleTier, moraleEfficiency } from './morale'
 export { stability, bugsFromBuild, bugDrift, fixPower } from './bugs'

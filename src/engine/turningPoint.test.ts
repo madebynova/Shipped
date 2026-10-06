@@ -20,21 +20,21 @@ function actionIndex(run: RunState, sprint: number, slot: number): number {
 describe('replay', () => {
   it('reproduces a finished run exactly from its history', () => {
     const run = playRun(balanced(FOUR), TEST_CONCEPT, 7)
-    const replayed = replayHistory(run.concept, run.seed, run.history)
+    const replayed = replayHistory(run, run.history)
     expect(replayed).toEqual(run)
   })
 
   it('reproduces an early ship exactly', () => {
     const run = playRun(balanced({ ...FOUR, shipAt: 5 }), TEST_CONCEPT, 3)
     expect(run.review!.forced).toBe(false)
-    expect(replayHistory(run.concept, run.seed, run.history)).toEqual(run)
+    expect(replayHistory(run, run.history)).toEqual(run)
   })
 
   it('returns null when a swapped action would make a later step illegal', () => {
     const run = playRun(balanced(FOUR), TEST_CONCEPT, 7)
     // Slot 1 of sprint 1 builds something; swapping it for HYPE breaks every later POLISH of it.
     const first = actionIndex(run, 1, 1)
-    const broken = replayHistory(run.concept, run.seed, run.history, { index: first, action: { type: 'HYPE' } })
+    const broken = replayHistory(run, run.history, { index: first, action: { type: 'HYPE' } })
     const firstAction = run.history[first]
     expect(firstAction.kind === 'action' && firstAction.action.type).toBe('BUILD')
     expect(broken).toBeNull()
@@ -64,7 +64,7 @@ describe('turning point', () => {
     for (const run of [playRun(balanced(FOUR)), playRun(greedyBuilder(['combat', 'physics', 'vehicles', 'story']))]) {
       const tp = decision(analyzeTurningPoint(run))
       const index = actionIndex(run, tp.sprint, tp.slot)
-      const replay = replayHistory(run.concept, run.seed, run.history, { index, action: tp.alternative })!
+      const replay = replayHistory(run, run.history, { index, action: tp.alternative })!
       expect(replay.review!.score).toBe(tp.alternativeScore)
       expect(tp.actualScore).toBe(run.review!.score)
     }

@@ -6,7 +6,6 @@ import {
   MORALE_DELTA,
   POLISHED_AT,
   REST_GAIN,
-  SPRINT_BURN,
   START_RESOURCES,
   TOTAL_SPRINTS,
   applyAction,
@@ -19,6 +18,7 @@ import {
   scopeLevelFor,
   shipGame,
   sprintEndEffects,
+  sprintUpkeep,
 } from './index'
 import { SCOPE_EFFICIENCY, BUILD_POWER } from './scope'
 import { TEST_CONCEPT } from './testing/bots'
@@ -33,12 +33,12 @@ describe('starting a run', () => {
     expect(s.sprint).toBe(1)
     expect(s.actionsLeft).toBe(3)
     expect({ money: s.money, morale: s.morale, hype: s.hype, bugs: s.bugs }).toEqual({
-      money: 100,
+      money: 500,
       morale: 70,
       hype: 0,
       bugs: 0,
     })
-    expect(START_RESOURCES).toEqual({ money: 100, morale: 70, hype: 0, bugs: 0 })
+    expect(START_RESOURCES).toEqual({ money: 500, morale: 70, hype: 0, bugs: 0 })
     expect(s.seed).toBe(42)
     expect(s.review).toBeNull()
     expect(s.history).toEqual([])
@@ -328,7 +328,7 @@ describe('sprint advancement', () => {
     const next = endSprint(s)
     expect(next.sprint).toBe(2)
     expect(next.actionsLeft).toBe(3)
-    expect(next.money).toBe(money - SPRINT_BURN)
+    expect(next.money).toBe(money - sprintUpkeep('LOW'))
     expect(next.phase).toBe('developing')
     expect(next.history.at(-1)).toEqual({ kind: 'endSprint', sprint: 1 })
   })
@@ -356,7 +356,7 @@ describe('sprint advancement', () => {
     let s = { ...freshRun(), money: 10, morale: 60 }
     s = { ...s, actionsLeft: 0 }
     const next = endSprint(s)
-    expect(next.money).toBe(10 - SPRINT_BURN)
+    expect(next.money).toBe(10 - sprintUpkeep('LOW'))
     expect(next.money).toBeLessThan(0)
     expect(next.phase).toBe('developing')
     expect(next.sprint).toBe(2)

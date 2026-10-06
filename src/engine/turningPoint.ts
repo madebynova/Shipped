@@ -78,7 +78,7 @@ function alternativesFor(before: RunState, chosen: Action): Action[] {
 /** Walk the recorded history and collect the state in front of every decision. */
 function decisionPoints(final: RunState) {
   const points: { index: number; sprint: number; slot: number; chosen: Action; before: RunState }[] = []
-  let state = createRun(final.concept, final.seed)
+  let state = createRun(final.concept, final.seed, final.config)
   final.history.forEach((event: HistoryEvent, index) => {
     if (event.kind === 'action') {
       points.push({ index, sprint: event.sprint, slot: event.slot, chosen: event.action, before: state })
@@ -149,7 +149,7 @@ export function analyzeTurningPoint(final: RunState): TurningPoint | null {
   const perDecision = decisionPoints(final).map((point) => {
     const candidates: Candidate[] = []
     for (const alternative of alternativesFor(point.before, point.chosen)) {
-      const replayed = replayHistory(final.concept, final.seed, final.history, {
+      const replayed = replayHistory(final, final.history, {
         index: point.index,
         action: alternative,
       })

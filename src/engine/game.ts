@@ -5,45 +5,61 @@ import {
   BROKE_MORALE_PENALTY,
   BUGGY_MORALE_PENALTY,
   BUGGY_THRESHOLD,
+  FULL_RUN,
   SHIP_UNLOCK_SPRINT,
   SLOTS_PER_SPRINT,
-  SPRINT_BURN,
   START_RESOURCES,
-  TOTAL_SPRINTS,
 } from './config'
+import { sprintUpkeep } from './economy'
 import { clampMorale, moraleTier } from './morale'
 import { computeReview } from './review'
 import { getScope } from './scope'
 import { addLog, plural } from './state'
-import type { Action, Concept, Feature, HistoryEvent, LogTone, RunState } from './types'
+import type {
+  Action,
+  Concept,
+  Feature,
+  FeatureId,
+  HistoryEvent,
+  LogTone,
+  RunConfig,
+  RunState,
+} from './types'
 
-export function createFeatures(): Feature[] {
-  return FEATURE_DEFS.map((def) => ({ ...def, state: 'PLANNED', progress: 0, quality: 0 }))
+/** Fresh features for a run: all six, or just the ones the config allows. */
+export function createFeatures(only: readonly FeatureId[] | null = null): Feature[] {
+  return FEATURE_DEFS.filter((def) => only === null || only.includes(def.id)).map((def) => ({
+    ...def,
+    state: 'PLANNED',
+    progress: 0,
+    quality: 0,
+  }))
 }
 
-/** Start a fresh run. Same concept + same seed always gives the same starting state. */
-export function createRun(concept: Concept, seed: number): RunState {
+/** Start a fresh run. Same concept + seed + config always gives the same starting state. */
+export function createRun(concept: Concept, seed: number, config: RunConfig = FULL_RUN): RunState {
   const clean: Concept = { ...concept, title: concept.title.trim(), idea: concept.idea.trim() }
   return addLog(
     {
       seed,
+      config: { ...config },
       rng: seed >>> 0,
       concept: clean,
       phase: 'developing',
       sprint: 1,
       actionsLeft: SLOTS_PER_SPRINT,
       ...START_RESOURCES,
-      features: createFeatures(),
+      features: createFeatures(config.featureIds),
       history: [],
       log: [],
       review: null,
     },
-    `Development of ${clean.title} begins. ${TOTAL_SPRINTS} sprints on the clock.`,
+    `Development of ${clean.title} begins. ${config.totalSprints} sprints on the clock.`,
   )
 }
 
 export function isFinalSprint(state: RunState): boolean {
-  return state.sprint >= TOTAL_SPRINTS
+  return state.sprint >= state.config.totalSprints
 }
 
 /** Shipping is allowed from sprint 4 on, any time before the game has shipped. */
@@ -67,8 +83,17 @@ export interface SprintEndEffects {
 export function sprintEndEffects(state: RunState): SprintEndEffects {
   const { level } = getScope(state.features)
   const drift = bugDrift(level, moraleTier(state.morale))
-  const money = -SPRINT_BURN
-  const notes: SprintEndNote[] = [{ text: `The studio burns ${SPRINT_BURN} money.`, tone: 'neutral' }]
+  const upkeep = sprintUpkeep(level)
+  const money = -upkeep
+  const notes: SprintEndNote[] = [
+    {
+      text:
+        level === 'LOW'
+          ? `The studio spends ${upkeep}.`
+          : `Upkeep is ${upkeep}: a ${level} scope game costs more to run.`,
+      tone: level === 'LOW' ? 'neutral' : 'warn',
+    },
+  ]
   let morale = 0
 
   if (drift > 0) {
@@ -135,12 +160,11 @@ export function endSprint(state: RunState): RunState {
  * Returns null if any step becomes illegal under the change.
  */
 export function replayHistory(
-  concept: Concept,
-  seed: number,
+  start: Pick<RunState, 'concept' | 'seed' | 'config'>,
   history: readonly HistoryEvent[],
   override?: { index: number; action: Action },
 ): RunState | null {
-  let state = createRun(concept, seed)
+  let state = createRun(start.concept, start.seed, start.config)
   for (let i = 0; i < history.length; i++) {
     const event = history[i]
     if (event.kind === 'action') {

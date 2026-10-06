@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import {
   SLOTS_PER_SPRINT,
-  TOTAL_SPRINTS,
+  isFinalSprint,
   previewAction,
   sprintEndEffects,
   validateAction,
@@ -120,7 +120,7 @@ interface Props {
 
 export default function ActionPanel({ run, pending, onChoose, onCloseSprint }: Props) {
   const fx = sprintEndEffects(run)
-  const finalSprint = run.sprint >= TOTAL_SPRINTS
+  const finalSprint = isFinalSprint(run)
   const done = run.actionsLeft === 0
   const closeRef = useRef<HTMLButtonElement>(null)
 

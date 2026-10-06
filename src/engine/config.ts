@@ -1,14 +1,26 @@
 // Every tunable number in the simulation lives here (or in the small rule tables
-// in scope.ts / bugs.ts / morale.ts) so balancing never means hunting through logic.
+// in scope.ts / bugs.ts / morale.ts / economy.ts) so balancing never means hunting
+// through logic.
+import type { RunConfig } from './types'
 
+/** Length of the full game. */
 export const TOTAL_SPRINTS = 8
 export const SHIP_UNLOCK_SPRINT = 4
 export const SLOTS_PER_SPRINT = 3
 
-export const START_RESOURCES = { money: 100, morale: 70, hype: 0, bugs: 0 } as const
+export const START_RESOURCES = { money: 500, morale: 70, hype: 0, bugs: 0 } as const
 
-/** Money is the clock: this much leaves every sprint. */
-export const SPRINT_BURN = 18
+export const FULL_RUN: RunConfig = { kind: 'full', totalSprints: TOTAL_SPRINTS, featureIds: null }
+
+/** "MY FIRST GAME": six sprints, four teaching cards. */
+export const TUTORIAL_RUN: RunConfig = {
+  kind: 'tutorial',
+  totalSprints: 6,
+  featureIds: ['combat', 'story', 'crafting', 'customization'],
+}
+
+/** Score needed to pass the tutorial and unlock the full game. */
+export const TUTORIAL_PASS_SCORE = 50
 
 /** Build points needed per point of feature complexity. */
 export const BUILD_COST_PER_COMPLEXITY = 4
@@ -46,6 +58,3 @@ export const BROKE_MORALE_PENALTY = 10
 
 /** An unpaid team (money <= 0) works at this fraction of normal strength. */
 export const BROKE_EFFICIENCY = 0.7
-
-/** Money at or below this reads as "LOW" in the UI. */
-export const LOW_MONEY = 30

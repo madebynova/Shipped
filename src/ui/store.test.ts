@@ -141,7 +141,7 @@ describe('starting again', () => {
     expect(fresh.sprint).toBe(1)
     expect(fresh.phase).toBe('developing')
     expect({ money: fresh.money, morale: fresh.morale, hype: fresh.hype, bugs: fresh.bugs }).toEqual({
-      money: 100,
+      money: 500,
       morale: 70,
       hype: 0,
       bugs: 0,

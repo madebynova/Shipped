@@ -1,10 +1,10 @@
 // Small helpers shared by the engine tests.
 import { applyAction, createRun, endSprint } from '../index'
-import type { Action, FeatureId, RunState } from '../index'
+import type { Action, FeatureId, RunConfig, RunState } from '../index'
 import { TEST_CONCEPT } from './bots'
 
-export function freshRun(seed = 1): RunState {
-  return createRun(TEST_CONCEPT, seed)
+export function freshRun(seed = 1, config?: RunConfig): RunState {
+  return createRun(TEST_CONCEPT, seed, config)
 }
 
 /** Apply an action that must be legal. */

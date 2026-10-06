@@ -1,4 +1,3 @@
-import { LOW_MONEY, SPRINT_BURN } from '../engine'
 import type { ReviewBand } from '../engine'
 
 /** +3 / −3 / 0 with a real minus sign. */
@@ -14,11 +13,12 @@ export function formatMoney(n: number): string {
 
 export type Mood = 'good' | 'warn' | 'bad' | 'neutral'
 
-export function moneyStatus(money: number): { label: string; mood: Mood } {
+/** `upkeep` is what closing a sprint costs right now (it grows with scope). */
+export function moneyStatus(money: number, upkeep: number): { label: string; mood: Mood } {
   if (money <= 0) return { label: 'BROKE: TEAM UNPAID', mood: 'bad' }
-  const closes = Math.ceil(money / SPRINT_BURN)
+  const closes = Math.ceil(money / upkeep)
   if (closes <= 1) return { label: 'BROKE AFTER THIS SPRINT', mood: 'bad' }
-  if (money <= LOW_MONEY) return { label: `BROKE IN ${closes} SPRINTS`, mood: 'warn' }
+  if (closes <= 2) return { label: `BROKE IN ${closes} SPRINTS`, mood: 'warn' }
   return { label: `RUNWAY ${closes} SPRINTS`, mood: 'neutral' }
 }
 

@@ -72,6 +72,8 @@ function Tile({ kind, label, value, status, risingIsGood, format, gauge }: TileP
 }
 
 interface Props {
+  /** What closing a sprint costs right now; it grows with scope. */
+  upkeep: number
   money: number
   morale: number
   hype: number
@@ -79,7 +81,7 @@ interface Props {
 }
 
 /** The four visible resources. Compact, readable, no giant meters. */
-export default function ResourceBar({ money, morale, hype, bugs }: Props) {
+export default function ResourceBar({ upkeep, money, morale, hype, bugs }: Props) {
   const tier = moraleTier(morale)
   const stable = stability(bugs)
   return (
@@ -89,7 +91,7 @@ export default function ResourceBar({ money, morale, hype, bugs }: Props) {
         label="MONEY"
         value={money}
         format={formatMoney}
-        status={moneyStatus(money)}
+        status={moneyStatus(money, upkeep)}
         risingIsGood
       />
       <Tile

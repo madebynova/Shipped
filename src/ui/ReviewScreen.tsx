@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { TOTAL_SPRINTS } from '../engine'
 import { formatMoney, signed, slug } from './format'
 import { AnimatedNumber } from './motion'
 import { useGameStore } from './store'
@@ -41,7 +40,7 @@ export default function ReviewScreen() {
     { label: 'ORIGINALITY', value: review.originality },
   ]
   const built = run.features.filter((f) => f.state !== 'PLANNED')
-  const early = TOTAL_SPRINTS - review.shippedSprint
+  const early = run.config.totalSprints - review.shippedSprint
 
   return (
     <div className={`review band-${slug(review.band)}`}>
