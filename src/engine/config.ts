@@ -58,3 +58,66 @@ export const BROKE_MORALE_PENALTY = 10
 
 /** An unpaid team (money <= 0) works at this fraction of normal strength. */
 export const BROKE_EFFICIENCY = 0.7
+
+/* ------------------------------------------------------------------------------------------
+   POST-LAUNCH: LIVE UPDATES
+   After shipping, a full game can keep going. Sales pay for the team; the launch review is
+   frozen forever; a LEGACY score tracks how good the game is *now*.
+   ------------------------------------------------------------------------------------------ */
+
+// -- Sales ---------------------------------------------------------------------------------
+// First-week sales = (FIRST_WEEK_BASE + FIRST_WEEK_PER_POINT x points of score above the floor)
+//                    x (1 + hype / 100) x the genre's market size. It opens the revenue account.
+export const FIRST_WEEK_BASE = 60
+export const FIRST_WEEK_PER_POINT = 5.5
+export const FIRST_WEEK_FLOOR = 20
+
+/** Ongoing sales per sprint start at this share of the first week, then fade. */
+export const SALES_TAIL_SHARE = 0.09
+/** Every live sprint, sales are multiplied by BASE + PER_POINT x legacy score: good games fade slowly. */
+export const SALES_DECAY_BASE = 0.72
+export const SALES_DECAY_PER_POINT = 0.002
+
+/** Buzz (hype after launch) lifts income by this fraction per point, and fades by 15% a sprint. */
+export const BUZZ_PER_HYPE = 0.004
+export const LIVE_HYPE_DECAY = 0.85
+
+// -- Updates -------------------------------------------------------------------------------
+/** An update window opens every 4 live sprints. You may release earlier, but it sells less. */
+export const RELEASE_WINDOW = 4
+export const EARLY_RELEASE_FACTOR = 0.6
+/**
+ * A release adds to sales per sprint: $4 per legacy point above your best published score, and $12 per feature
+ * added. Only a new best earns anything, so releasing at a temporary low and re-releasing does not pay twice.
+ */
+export const SPIKE_PER_LEGACY_POINT = 4
+export const SPIKE_PER_NEW_FEATURE = 12
+
+// -- Promises ------------------------------------------------------------------------------
+/** A promise left unbuilt hurts the legacy score by 1 point per sprint, up to 4 points. */
+export const PROMISE_HURT_PER_SPRINT = 1
+export const PROMISE_HURT_CAP = 4
+/** Formally cancelling one costs 2 legacy points for good, and 10 hype right away. */
+export const CANCEL_PENALTY = 2
+export const CANCEL_HYPE_PENALTY = 10
+
+// -- Legacy score --------------------------------------------------------------------------
+/**
+ * A rough launch makes people skeptical: for a launch under 75, every point of improvement counts for
+ * less (2% less per point under 75, never below 40% credit). The legacy score still STARTS equal to the
+ * launch score; it is only the climb back that is slower. A launch of 75 or better has no discount, a
+ * 70 keeps 90% of its improvements, a 55 keeps 60%, and anything from 45 down keeps 40%. Every launch
+ * therefore has a ceiling (launch + credit x the improvement available), which is how a first
+ * impression keeps mattering long after launch.
+ */
+export const SKEPTICISM_BELOW = 75
+export const SKEPTICISM_PER_POINT = 0.02
+export const MIN_RECOVERY_CREDIT = 0.4
+/** The COMPLETE stamp (every built feature POLISHED, no bugs, every promise kept) and the smallest game it can be earned with. */
+export const COMPLETE_BONUS = 6
+export const COMPLETE_MIN_FEATURES = 4
+
+// -- Events --------------------------------------------------------------------------------
+/** Chance that a live sprint opens with an event, and how many sprints an event stays away after it fires. */
+export const EVENT_CHANCE = 0.5
+export const EVENT_COOLDOWN = 3

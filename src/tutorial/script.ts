@@ -1,3 +1,4 @@
+import { conceptFromTemplate, findConcept } from '../content/concepts'
 import { SHIP_UNLOCK_SPRINT, TUTORIAL_PASS_SCORE, canShip, computeReview, getScope, moraleTier, sprintUpkeep } from '../engine'
 import type { Concept, Feature, RunState } from '../engine'
 
@@ -5,12 +6,11 @@ import type { Concept, Feature, RunState } from '../engine'
 // read the run and explain it, but never change it. The tutorial is the real game on a
 // smaller scale (6 sprints, 4 feature cards), with friendly commentary on top.
 
-/** A charming starter concept the player can rename. */
-export const TUTORIAL_CONCEPT: Concept = {
-  title: 'Lantern Hollow',
-  idea: 'A cozy adventure where a tiny lantern-keeper befriends forest spirits, crafts glowing gear and wakes a sleepy village.',
-  genre: 'RPG',
-}
+/**
+ * The starter concept MY FIRST GAME begins on (the player can rename it, or pick one of the other two
+ * beginner concepts from the gallery). It is the same Lantern Hollow as in v0.0.2.
+ */
+export const TUTORIAL_CONCEPT: Concept = conceptFromTemplate(findConcept('lantern-hollow')!)
 
 /* ------------------------------------------------------------------ events ---------- */
 

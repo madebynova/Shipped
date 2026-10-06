@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import ConceptScreen from './ui/ConceptScreen'
 import GameScreen from './ui/GameScreen'
+import LegacyScreen from './ui/LegacyScreen'
 import ReviewScreen from './ui/ReviewScreen'
 import { useGameStore } from './ui/store'
 import Toolbar from './ui/Toolbar'
@@ -22,7 +23,15 @@ export default function App() {
   return (
     <>
       <Toolbar className="toolbar-fixed" />
-      {screen === 'review' ? <ReviewScreen key={seed} /> : screen === 'welcome' ? <Welcome /> : <ConceptScreen />}
+      {screen === 'review' ? (
+        <ReviewScreen key={seed} />
+      ) : screen === 'legacy' ? (
+        <LegacyScreen key={seed} />
+      ) : screen === 'welcome' ? (
+        <Welcome />
+      ) : (
+        <ConceptScreen />
+      )}
     </>
   )
 }

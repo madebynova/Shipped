@@ -8,8 +8,16 @@ import { FeatureIcon } from './icons'
 import { glow, useOnChange } from './motion'
 import Tooltip from './Tooltip'
 
+/** A small label under a card's name about the pitch: what it promised, and whether that promise was kept. */
+export interface CardMark {
+  kind: 'pitch' | 'promised' | 'cancelled'
+  text: string
+}
+
 interface Props {
   feature: Feature
+  /** Promised in the pitch, a broken promise, or cancelled. Not shown in the tutorial. */
+  mark?: CardMark
   /** Keyboard number (1-6) used while choosing a target. Also the card's collector number. */
   hotkey: number
   /** The action waiting for a target, or null. */
@@ -37,7 +45,7 @@ function previewLine(type: ActionType, p: ActionPreview, feature: Feature): stri
 }
 
 /** A feature, drawn like a collectible card: art strip, name plate, stats. */
-export default function FeatureCard({ feature, hotkey, targeting, blockedReason, preview, onPick }: Props) {
+export default function FeatureCard({ feature, mark, hotkey, targeting, blockedReason, preview, onPick }: Props) {
   const ref = useRef<HTMLElement>(null)
   const cost = buildCost(feature)
   const built = feature.state !== 'PLANNED'
@@ -63,6 +71,12 @@ export default function FeatureCard({ feature, hotkey, targeting, blockedReason,
 
       <div className="card-body">
         <h3 className="card-name">{feature.name}</h3>
+        {mark && (
+          <span className={`mark mark-${mark.kind}`}>
+            {mark.kind === 'pitch' ? '★ ' : ''}
+            {mark.text}
+          </span>
+        )}
         <p className="card-desc">{feature.description}</p>
       </div>
 

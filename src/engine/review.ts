@@ -1,3 +1,4 @@
+import { firstWeekSales } from './economy'
 import { originalityScore } from './originality'
 import { buildVerdict } from './reviewText'
 import type { Feature, ReviewBand, Review, RunState } from './types'
@@ -70,7 +71,9 @@ export function computeReview(state: RunState, forced = false): Review {
   const gameplay = curve(gameplayRaw) * (1 - Math.min(GAMEPLAY_BUG_CAP, GAMEPLAY_BUG_PENALTY * bugs))
   const content = curve(contentRaw) * (1 - Math.min(CONTENT_BUG_CAP, CONTENT_BUG_PENALTY * bugs))
   const polish = averageQuality * (1 - Math.min(POLISH_BUG_CAP, POLISH_BUG_PENALTY * bugs))
-  const originality = originalityScore(state.concept)
+  // After launch an event can add to ORIGINALITY (embracing the modders' creation). Before launch
+  // there is no live state, so the bonus is 0 and the launch score is exactly what it always was.
+  const originality = clamp(originalityScore(state.concept) + (state.live?.originalityBonus ?? 0), 0, 100)
 
   const base = Math.round(
     gameplay * WEIGHTS.gameplay +
@@ -105,6 +108,7 @@ export function computeReview(state: RunState, forced = false): Review {
     verdict: [],
     shippedSprint: state.sprint,
     forced,
+    sales: firstWeekSales(score, state.hype, state.concept.genre),
   }
   review.verdict = buildVerdict(state, review)
   return review

@@ -1,5 +1,5 @@
 import { FEATURE_DEFS } from '../content/features'
-import { applyAction } from './actions'
+import { applyAction, isStuck } from './actions'
 import { bugDrift } from './bugs'
 import {
   BROKE_MORALE_PENALTY,
@@ -11,7 +11,10 @@ import {
   START_RESOURCES,
 } from './config'
 import { sprintUpkeep } from './economy'
+import { endLiveSprint, launchUpdates, liveSprintEndEffects, releaseUpdate, retireGame } from './live'
+import { resolveEvent } from './liveEvents'
 import { clampMorale, moraleTier } from './morale'
+import { cancelPromise } from './promises'
 import { computeReview } from './review'
 import { getScope } from './scope'
 import { addLog, plural } from './state'
@@ -21,9 +24,10 @@ import type {
   Feature,
   FeatureId,
   HistoryEvent,
-  LogTone,
   RunConfig,
   RunState,
+  SprintEndEffects,
+  SprintEndNote,
 } from './types'
 
 /** Fresh features for a run: all six, or just the ones the config allows. */
@@ -53,13 +57,16 @@ export function createRun(concept: Concept, seed: number, config: RunConfig = FU
       history: [],
       log: [],
       review: null,
+      live: null,
+      legacy: null,
     },
     `Development of ${clean.title} begins. ${config.totalSprints} sprints on the clock.`,
   )
 }
 
+/** The deadline sprint of development. A live game has no deadline. */
 export function isFinalSprint(state: RunState): boolean {
-  return state.sprint >= state.config.totalSprints
+  return state.phase === 'developing' && state.sprint >= state.config.totalSprints
 }
 
 /** Shipping is allowed from sprint 4 on, any time before the game has shipped. */
@@ -67,20 +74,9 @@ export function canShip(state: RunState): boolean {
   return state.phase === 'developing' && state.sprint >= SHIP_UNLOCK_SPRINT
 }
 
-export interface SprintEndNote {
-  text: string
-  tone: LogTone
-}
-
-export interface SprintEndEffects {
-  money: number
-  bugs: number
-  morale: number
-  notes: SprintEndNote[]
-}
-
 /** What closing the current sprint will do. The UI previews this; endSprint applies it. */
 export function sprintEndEffects(state: RunState): SprintEndEffects {
+  if (state.phase === 'live') return liveSprintEndEffects(state)
   const { level } = getScope(state.features)
   const drift = bugDrift(level, moraleTier(state.morale))
   const upkeep = sprintUpkeep(level)
@@ -137,7 +133,8 @@ export function shipGame(state: RunState): RunState {
  * sprint-end costs and start the next sprint. Closing sprint 8 forces the release.
  */
 export function endSprint(state: RunState): RunState {
-  if (state.phase !== 'developing' || state.actionsLeft > 0) return state
+  if (state.phase === 'live') return endLiveSprint(state)
+  if (state.phase !== 'developing' || (state.actionsLeft > 0 && !isStuck(state))) return state
 
   const history: HistoryEvent[] = [...state.history, { kind: 'endSprint', sprint: state.sprint }]
   if (isFinalSprint(state)) return finishRun({ ...state, history }, true)
@@ -167,15 +164,36 @@ export function replayHistory(
   let state = createRun(start.concept, start.seed, start.config)
   for (let i = 0; i < history.length; i++) {
     const event = history[i]
-    if (event.kind === 'action') {
-      const action = override && override.index === i ? override.action : event.action
-      const result = applyAction(state, action)
-      if (!result.ok) return null
-      state = result.state
-    } else if (event.kind === 'endSprint') {
-      state = endSprint(state)
-    } else {
-      state = shipGame(state)
+    switch (event.kind) {
+      case 'action': {
+        const action = override && override.index === i ? override.action : event.action
+        const result = applyAction(state, action)
+        if (!result.ok) return null
+        state = result.state
+        break
+      }
+      case 'endSprint':
+        state = endSprint(state)
+        break
+      case 'ship':
+        state = shipGame(state)
+        break
+      // After launch. The same functions the UI calls, so a replay lands on exactly the same state.
+      case 'launchUpdates':
+        state = launchUpdates(state)
+        break
+      case 'release':
+        state = releaseUpdate(state)
+        break
+      case 'cancel':
+        state = cancelPromise(state, event.featureId)
+        break
+      case 'choice':
+        state = resolveEvent(state, event.choiceId)
+        break
+      case 'retire':
+        state = retireGame(state)
+        break
     }
   }
   return state

@@ -50,13 +50,17 @@ function stateForQuality(quality: number): FeatureState {
 
 /** Why an action cannot be taken right now, or null if it can. */
 export function validateAction(state: RunState, action: Action): string | null {
-  if (state.phase !== 'developing') return 'The game has already shipped.'
+  // The same five actions work before launch ('developing') and after it ('live').
+  if (state.phase === 'retired') return 'The game has been retired.'
+  if (state.phase !== 'developing' && state.phase !== 'live') return 'The game has already shipped.'
+  if (state.live?.pendingEvent) return 'Decide what to do about the event first.'
   if (state.actionsLeft <= 0) return 'No action slots left this sprint.'
 
   switch (action.type) {
     case 'BUILD': {
       const feature = findFeature(state, action.featureId)
       if (!feature) return 'Choose a feature to build.'
+      if (state.live?.cancelled.includes(feature.id)) return `${feature.name} was cancelled for good.`
       if (feature.state !== 'PLANNED' && feature.quality >= MAX_QUALITY) {
         return `${feature.name} cannot be pushed any further.`
       }
@@ -76,6 +80,23 @@ export function validateAction(state: RunState, action: Action): string | null {
     case 'REST':
       return state.morale < 100 ? null : 'The team is already at full morale.'
   }
+}
+
+/**
+ * True when slots are left but no action is legal: every feature is flawless or cancelled, there are no
+ * bugs, morale is full and hype is maxed. It is very rare, but it must never trap a sprint open, so the
+ * sprint is allowed to close early when this is true.
+ */
+export function isStuck(state: RunState): boolean {
+  if ((state.phase !== 'developing' && state.phase !== 'live') || state.actionsLeft <= 0) return false
+  if (state.live?.pendingEvent) return false
+  const anyAction = (['FIX', 'HYPE', 'REST'] as const).some((type) => validateAction(state, { type }) === null)
+  if (anyAction) return false
+  return !state.features.some(
+    (f) =>
+      validateAction(state, { type: 'BUILD', featureId: f.id }) === null ||
+      validateAction(state, { type: 'POLISH', featureId: f.id }) === null,
+  )
 }
 
 /** BUILD on a PLANNED feature: advance progress. On a built feature: a fast, messy rework. */
@@ -187,6 +208,18 @@ function applyHype(state: RunState): RunState {
     ...state,
     hype,
     morale: clampMorale(state.morale + MORALE_DELTA.HYPE),
+  }
+  // After launch HYPE is a marketing push: the same action, with live-service flavour text.
+  if (state.phase === 'live') {
+    return addFlavorLog(
+      next,
+      [
+        `A dev blog goes up. People are talking about ${title} again.`,
+        `You post a roadmap and tease the next update. The buzz comes back.`,
+        `${title} gets a front-page feature. Sales notice.`,
+      ],
+      'good',
+    )
   }
   return addFlavorLog(
     next,

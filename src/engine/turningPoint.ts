@@ -86,9 +86,10 @@ function decisionPoints(final: RunState) {
       if (result.ok) state = result.state
     } else if (event.kind === 'endSprint') {
       state = endSprint(state)
-    } else {
+    } else if (event.kind === 'ship') {
       state = shipGame(state)
     }
+    // Anything else is a post-launch event. The turning point is about the launch only, so it is ignored.
   })
   return points
 }

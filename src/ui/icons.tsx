@@ -136,3 +136,38 @@ export function CloseIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+/** PICK AN EXAMPLE: a small deck of cards. */
+export function DeckIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="9" y="7" width="16" height="21" rx="2.5" />
+      <path d="M6 22 V6.5 C6 5.4 6.9 4.5 8 4.5 H20" />
+      <path d="M13 14 H21 M13 19 H18" />
+    </svg>
+  )
+}
+
+/** ROLL RANDOM: a die showing five. */
+export function DiceIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="5" y="5" width="22" height="22" rx="4" />
+      <circle cx="11" cy="11" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="21" cy="11" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="16" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="11" cy="21" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="21" cy="21" r="1.6" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+/** WRITE MY OWN: a pencil. */
+export function PencilIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M5 27 L6.5 20 L21 5.5 C22 4.5 23.5 4.5 24.5 5.5 L26.5 7.5 C27.5 8.5 27.5 10 26.5 11 L12 25.5 Z" />
+      <path d="M18.5 8 L24 13.5" />
+    </svg>
+  )
+}

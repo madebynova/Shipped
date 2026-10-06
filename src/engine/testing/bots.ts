@@ -1,7 +1,26 @@
 // Headless "players" used by the balance tests. They only talk to the public
 // engine API, exactly like the UI does, so they double as a check that a whole
 // run can be driven without React.
-import { FULL_RUN, applyAction, canShip, createRun, endSprint, shipGame } from '../index'
+import {
+  FULL_RUN,
+  applyAction,
+  canShip,
+  cancelPromise,
+  computeLegacy,
+  createRun,
+  endSprint,
+  findLiveEvent,
+  getScope,
+  isUpdateWindowOpen,
+  launchUpdates,
+  moraleTier,
+  previewRelease,
+  releaseUpdate,
+  resolveEvent,
+  retireGame,
+  shipGame,
+  unresolvedPromises,
+} from '../index'
 import type { Action, Concept, FeatureId, RunConfig, RunState } from '../index'
 
 export const TEST_CONCEPT: Concept = {
@@ -115,5 +134,168 @@ export function balanced(opts: BalancedOptions): Policy {
       { type: 'REST' },
       { type: 'HYPE' },
     ])
+  }
+}
+
+/* ------------------------------------------------------------------------------------------
+   Live updates (after launch). The same idea as above: a policy looks at the state and picks a
+   move. These talk to the public engine API only, exactly like the UI.
+   ------------------------------------------------------------------------------------------ */
+
+export type LiveMove = Action | 'release' | 'retire' | { cancel: FeatureId }
+export type LivePolicy = (state: RunState) => LiveMove
+/** Picks the id of a choice for the event that is waiting. */
+export type EventPolicy = (state: RunState) => string
+
+/** The first choice of the pending event that the account can pay for. */
+export const firstAffordableChoice: EventPolicy = (state) => {
+  const event = findLiveEvent(state.live?.pendingEvent ?? null)
+  if (!event) throw new Error('no event is pending')
+  const choice = event.choices.find((c) => !c.cost || state.money >= c.cost)
+  if (!choice) throw new Error('no affordable choice')
+  return choice.id
+}
+
+/** What a thoughtful player would usually pick: helpful choices when the money is there, cheap ones when it is not. */
+export const sensibleChoice: EventPolicy = (state) => {
+  const rich = state.money >= 150
+  const pick: Record<string, string> = {
+    modders: 'embrace',
+    streamer: rich ? 'sponsor' : 'thanks',
+    demand: 'reassure',
+    sale: state.money < 120 ? 'join' : 'hold',
+    rival: rich ? 'outshine' : 'hold',
+    burnout: state.money >= 80 ? 'retreat' : 'push',
+    rereview: 'shout',
+    driver: state.money >= 80 ? 'hotfix' : 'wait',
+  }
+  const wanted = pick[state.live?.pendingEvent ?? '']
+  const event = findLiveEvent(state.live?.pendingEvent ?? null)
+  const choice = event?.choices.find((c) => c.id === wanted && (!c.cost || state.money >= c.cost))
+  return choice ? choice.id : firstAffordableChoice(state)
+}
+
+/**
+ * Take a shipped run through LAUNCH UPDATES and play it until it is retired (by the policy, or because the
+ * money ran out). Events are decided by `pick`. `maxLiveSprints` is a safety net so a policy that never
+ * retires still ends.
+ */
+export function playLive(
+  shipped: RunState,
+  policy: LivePolicy,
+  pick: EventPolicy = sensibleChoice,
+  maxLiveSprints = 60,
+): RunState {
+  let state = launchUpdates(shipped)
+  if (state.phase !== 'live') throw new Error('could not launch updates')
+  for (let guard = 0; guard < 3000 && state.phase === 'live'; guard++) {
+    const live = state.live!
+    if (live.pendingEvent) {
+      const next = resolveEvent(state, pick(state))
+      if (next === state) throw new Error(`illegal event choice for ${live.pendingEvent}`)
+      state = next
+      continue
+    }
+    if (state.actionsLeft === 0) {
+      state = state.sprint - live.launchSprint >= maxLiveSprints ? retireGame(state) : endSprint(state)
+      continue
+    }
+    const move = policy(state)
+    if (move === 'retire') {
+      state = retireGame(state)
+    } else if (move === 'release') {
+      const next = releaseUpdate(state)
+      if (next === state) throw new Error('the policy tried an illegal release')
+      state = next
+    } else if ('cancel' in move) {
+      const next = cancelPromise(state, move.cancel)
+      if (next === state) throw new Error('the policy tried an illegal cancel')
+      state = next
+    } else {
+      const result = applyAction(state, move)
+      if (!result.ok) throw new Error(`live policy chose an illegal action: ${move.type} (${result.reason})`)
+      state = result.state
+    }
+  }
+  if (state.phase === 'live') throw new Error('the live run did not end')
+  return state
+}
+
+/** Rests (or hypes) every slot and never releases. Shows how long the money lasts when nothing is done. */
+export const idleLive: LivePolicy = (state) =>
+  firstLegal(state, [{ type: 'REST' }, { type: 'HYPE' }, { type: 'FIX' }, ...anyBuild(state)])
+
+export interface SmartLiveOptions {
+  /** Retire after this many live sprints even if there is more to do. */
+  retireAt?: number
+  /** Retire the moment the game is COMPLETE. */
+  retireWhenComplete?: boolean
+  /** Quality each built feature is polished up to. */
+  polishTo?: number
+  /** Build promised features. When false (or when building one would push scope to CRITICAL) they are cancelled early. */
+  keepPromises?: boolean
+  /** Release an update as soon as the legacy score would gain this many points. */
+  releaseGain?: number
+}
+
+/** First action from the list that is legal right now, or null. */
+function firstLegalOrNull(state: RunState, candidates: Action[]): Action | null {
+  for (const a of candidates) if (applyAction(state, a).ok) return a
+  return null
+}
+
+/**
+ * A sensible live player: keep the team rested, squash bugs, finish the promised features if the game can take
+ * them, polish what is weakest, release an update when the window opens or when there is a lot to show, and
+ * retire when there is nothing left worth doing (after one last bug sweep).
+ */
+export function smartLive(opts: SmartLiveOptions = {}): LivePolicy {
+  const polishTo = opts.polishTo ?? 88
+  const retireAt = opts.retireAt ?? 14
+  const releaseGain = opts.releaseGain ?? 5
+  const keep = opts.keepPromises ?? true
+
+  /** One last bug sweep, then retire. (Bugs creep in at the end of every sprint, so cleaning first matters.) */
+  const sweepThenRetire = (state: RunState): LiveMove => {
+    const sweep = state.bugs > 0 ? firstLegalOrNull(state, [{ type: 'FIX' }]) : null
+    return sweep ?? 'retire'
+  }
+
+  return (state) => {
+    const live = state.live!
+    const liveSprint = state.sprint - live.launchSprint
+    const legacy = computeLegacy(state)
+    if ((opts.retireWhenComplete ?? true) && legacy.complete) return 'retire'
+    if (liveSprint > retireAt) return sweepThenRetire(state)
+
+    const preview = previewRelease(state)
+    const gain = preview.legacyAfter - preview.legacyBefore
+    if (preview.ok && gain >= 1 && (isUpdateWindowOpen(live) || gain >= releaseGain)) return 'release'
+
+    if (state.morale < 40) return firstLegalOrNull(state, [{ type: 'REST' }]) ?? sweepThenRetire(state)
+    if (state.bugs >= 3) return firstLegalOrNull(state, [{ type: 'FIX' }]) ?? sweepThenRetire(state)
+
+    // Promises: build one if the game can take it, otherwise cancel it now, while that is cheap.
+    const open = unresolvedPromises(state)
+    if (open.length > 0) {
+      const id = open[0]
+      const levelWhenBuilt = getScope(state.features.map((f) => (f.id === id ? { ...f, state: 'PLAYABLE' as const } : f))).level
+      if (keep && levelWhenBuilt !== 'CRITICAL') {
+        const build = firstLegalOrNull(state, [{ type: 'BUILD', featureId: id }])
+        if (build && moraleTier(state.morale) !== 'BURNED OUT') return build
+      } else {
+        return { cancel: id }
+      }
+    }
+
+    const weak = state.features
+      .filter((f) => f.state !== 'PLANNED' && f.quality < polishTo)
+      .sort((a, b) => a.quality - b.quality)[0]
+    if (weak) return { type: 'POLISH', featureId: weak.id }
+    if (state.bugs > 0) return firstLegalOrNull(state, [{ type: 'FIX' }]) ?? sweepThenRetire(state)
+
+    // Nothing left to improve: sell the next update with a little buzz, or call it a day.
+    if (preview.ok && !isUpdateWindowOpen(live) && gain >= 1) return firstLegalOrNull(state, [{ type: 'HYPE' }]) ?? 'retire'
+    return sweepThenRetire(state)
   }
 }

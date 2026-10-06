@@ -56,7 +56,7 @@
   --scrim: #02050c;
 
   --radius: 14px;
-  --font-display: 'Pixelify Sans', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
   --heading-glow: none;
   color-scheme: dark;
 }
@@ -142,7 +142,7 @@
   --scrim: #0d050b;
 
   --radius: 18px;
-  --font-display: 'Pixelify Sans', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
   --heading-glow: none;
   color-scheme: dark;
 }
@@ -228,7 +228,7 @@
   --scrim: #040208;
 
   --radius: 0px;
-  --font-display: 'Pixelify Sans', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
   --heading-glow: none;
   color-scheme: dark;
 }

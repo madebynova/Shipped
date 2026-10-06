@@ -1,6 +1,6 @@
 // Small helpers shared by the engine tests.
-import { applyAction, createRun, endSprint } from '../index'
-import type { Action, FeatureId, RunConfig, RunState } from '../index'
+import { applyAction, computeReview, createRun, endSprint, findLiveEvent, launchUpdates, resolveEvent } from '../index'
+import type { Action, Concept, Feature, FeatureId, RunConfig, RunState } from '../index'
 import { TEST_CONCEPT } from './bots'
 
 export function freshRun(seed = 1, config?: RunConfig): RunState {
@@ -63,4 +63,81 @@ export function deepFreeze<T>(value: T): T {
     for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
   }
   return value
+}
+
+/* ------------------------------------------------------------------------------------------
+   Live-phase helpers
+   ------------------------------------------------------------------------------------------ */
+
+export interface ShippedOptions {
+  features?: Partial<Record<FeatureId, Partial<Feature>>>
+  bugs?: number
+  hype?: number
+  money?: number
+  morale?: number
+  concept?: Concept
+  seed?: number
+  sprint?: number
+  config?: RunConfig
+}
+
+/** A feature that is built and at a given quality (POLISHED from 70). */
+export function built(quality: number, complexity?: number): Partial<Feature> {
+  return {
+    quality,
+    state: quality >= 70 ? 'POLISHED' : 'PLAYABLE',
+    progress: complexity ? complexity * 4 : 0,
+  }
+}
+
+/**
+ * A run that has just shipped, with exactly the situation a test needs. The review is the real review of
+ * that situation, so launch scores, sales and promises all behave like they would in a played game.
+ * Unlisted features are unbuilt.
+ */
+export function shippedRun(opts: ShippedOptions = {}): RunState {
+  const base = createRun(opts.concept ?? TEST_CONCEPT, opts.seed ?? 1, opts.config)
+  const features = base.features.map((f) => {
+    const patch = opts.features?.[f.id]
+    return patch ? { ...f, ...patch, progress: patch.progress ?? f.complexity * 4 } : f
+  })
+  const developing: RunState = {
+    ...base,
+    sprint: opts.sprint ?? 6,
+    features,
+    bugs: opts.bugs ?? 0,
+    hype: opts.hype ?? 0,
+    money: opts.money ?? 100,
+    morale: opts.morale ?? 70,
+  }
+  return { ...developing, phase: 'shipped', review: computeReview({ ...developing, phase: 'shipped' }, false) }
+}
+
+/** A well-run game with four built features (Combat, Story, Crafting, Customization). */
+export const FOUR_BUILT: ShippedOptions['features'] = {
+  combat: built(72),
+  story: built(72),
+  crafting: built(72),
+  customization: built(72),
+}
+
+/** shippedRun(), then LAUNCH UPDATES. */
+export function goLive(opts: ShippedOptions = {}): RunState {
+  const live = launchUpdates(shippedRun(opts))
+  if (live.phase !== 'live') throw new Error('could not go live')
+  return live
+}
+
+/** If an event is waiting, take the first choice the account can pay for. */
+export function settle(state: RunState): RunState {
+  const id = state.live?.pendingEvent
+  if (!id) return state
+  const event = findLiveEvent(id)!
+  const choice = event.choices.find((c) => !c.cost || state.money >= c.cost)!
+  return resolveEvent(state, choice.id)
+}
+
+/** Spend the remaining slots on idle moves, close the live sprint, and deal with any event that comes up. */
+export function liveSprint(state: RunState): RunState {
+  return settle(endSprint(spendSlots(settle(state))))
 }

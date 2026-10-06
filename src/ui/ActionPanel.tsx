@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import {
   SLOTS_PER_SPRINT,
   isFinalSprint,
+  isStuck,
+  liveSprintNumber,
   previewAction,
   sprintEndEffects,
   validateAction,
@@ -25,6 +27,11 @@ const ACTIONS: readonly ActionDef[] = [
   { type: 'HYPE', key: 'H', blurb: 'Raise hype. Improves nothing.' },
   { type: 'REST', key: 'R', blurb: 'Recover morale. Builds nothing.' },
 ]
+
+/** After launch HYPE is a marketing push. The other four actions read the same. */
+const LIVE_BLURB: Partial<Record<ActionType, string>> = {
+  HYPE: 'Marketing push: raises buzz, which lifts sales. Improves nothing.',
+}
 
 type ChipTone = 'good' | 'bad' | 'warn' | 'hype'
 interface Chip {
@@ -123,7 +130,13 @@ interface Props {
 export default function ActionPanel({ run, pending, onChoose, onCloseSprint }: Props) {
   const fx = sprintEndEffects(run)
   const finalSprint = isFinalSprint(run)
-  const done = run.actionsLeft === 0
+  const live = run.phase === 'live'
+  // Normally every slot is spent. In the rare case that nothing legal is left, the sprint may close early.
+  const stuck = isStuck(run)
+  const done = run.actionsLeft === 0 || stuck
+  const liveNumber = liveSprintNumber(run)
+  // In the warning sprint, if the money still will not cover the close, closing the sprint closes the studio.
+  const willClose = live && run.live!.warned && run.money + fx.money < 0
   const closeRef = useRef<HTMLButtonElement>(null)
 
   // When the last slot is spent, put the next step under the player's thumb.
@@ -172,7 +185,7 @@ export default function ActionPanel({ run, pending, onChoose, onCloseSprint }: P
                         </span>
                       )}
                     </span>
-                    <span className="action-desc">{blocked ?? a.blurb}</span>
+                    <span className="action-desc">{blocked ?? (live ? LIVE_BLURB[a.type] : undefined) ?? a.blurb}</span>
                   </span>
                 </button>
               )
@@ -185,6 +198,12 @@ export default function ActionPanel({ run, pending, onChoose, onCloseSprint }: P
             </Tooltip>
             {finalSprint ? (
               <span>The deadline hits. The game ships.</span>
+            ) : live ? (
+              <span>
+                Sales +{formatMoney(fx.income ?? 0)}, upkeep −{formatMoney(fx.upkeep ?? 0)}
+                {fx.bugs > 0 ? `, ${signed(fx.bugs)} ${fx.bugs === 1 ? 'bug creeps' : 'bugs creep'} in` : ''}
+                {fx.morale < 0 ? `, ${signed(fx.morale)} morale` : ''}
+              </span>
             ) : (
               <span>
                 Burn {formatMoney(Math.abs(fx.money))}
@@ -196,9 +215,13 @@ export default function ActionPanel({ run, pending, onChoose, onCloseSprint }: P
         </>
       ) : (
         <div className="closing">
-          <div className="eyebrow">{finalSprint ? 'DEADLINE' : `SPRINT ${run.sprint} COMPLETE`}</div>
+          <div className="eyebrow">
+            {finalSprint ? 'DEADLINE' : live ? `LIVE SPRINT ${liveNumber} COMPLETE` : `SPRINT ${run.sprint} COMPLETE`}
+          </div>
           {finalSprint ? (
             <p>All three slots are spent. Time is up: your game ships exactly as it stands.</p>
+          ) : stuck ? (
+            <p>Nothing legal is left to do this sprint, so it can close now.</p>
           ) : (
             <ul className="end-notes">
               {fx.notes.map((n) => (
@@ -209,8 +232,22 @@ export default function ActionPanel({ run, pending, onChoose, onCloseSprint }: P
             </ul>
           )}
           <button ref={closeRef} type="button" className="cta" onClick={onCloseSprint}>
-            {finalSprint ? 'SHIP THE GAME' : `END SPRINT ${run.sprint}`}
-            <span>{finalSprint ? 'see the review' : `start sprint ${run.sprint + 1}`}</span>
+            {finalSprint
+              ? 'SHIP THE GAME'
+              : willClose
+                ? 'CLOSE THE STUDIO'
+                : live
+                  ? `END LIVE SPRINT ${liveNumber}`
+                  : `END SPRINT ${run.sprint}`}
+            <span>
+              {finalSprint
+                ? 'see the review'
+                : willClose
+                  ? 'the game is retired · see the legacy card'
+                  : live
+                    ? `start live sprint ${liveNumber + 1}`
+                    : `start sprint ${run.sprint + 1}`}
+            </span>
           </button>
         </div>
       )}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { TUTORIAL_PASS_SCORE } from '../engine'
+import { COMPLETE_BONUS, TUTORIAL_PASS_SCORE, isComplete, openingAccount } from '../engine'
 import { explainRun, tutorialPassed } from '../tutorial/script'
 import { formatMoney, signed, slug } from './format'
 import { AnimatedNumber, prefersReducedMotion } from './motion'
@@ -24,6 +24,8 @@ export default function ReviewScreen() {
   const newRun = useGameStore((s) => s.newRun)
   const editConcept = useGameStore((s) => s.editConcept)
   const openStudio = useGameStore((s) => s.openStudio)
+  const launchUpdates = useGameStore((s) => s.launchUpdates)
+  const retire = useGameStore((s) => s.retire)
 
   const [stage, setStage] = useState(() => (prefersReducedMotion() ? FINAL_STAGE : 0))
   const [skipped, setSkipped] = useState(false)
@@ -74,6 +76,8 @@ export default function ReviewScreen() {
 
   const tutorial = run.config.kind === 'tutorial'
   const passed = tutorial && tutorialPassed(run)
+  // A game that shipped fully made already has the stamp in reach: say so where the choice is made.
+  const complete = !tutorial && isComplete(run)
   const early = run.config.totalSprints - review.shippedSprint
   const at = (n: number) => (stage >= n ? 'in' : '')
 
@@ -108,6 +112,11 @@ export default function ReviewScreen() {
             <span className="score-of">/ 100</span>
           </div>
           <div className={`band reveal stamp ${at(STAGE.band)}`}>{review.band}</div>
+          {!tutorial && (
+            <p className={`launch-caption reveal ${at(STAGE.band)}`}>
+              LAUNCH SCORE · recorded in your archive for good, whatever you do next
+            </p>
+          )}
         </div>
 
         <div className={`dims reveal ${at(STAGE.dims)}`}>
@@ -162,6 +171,25 @@ export default function ReviewScreen() {
           </p>
         </div>
 
+        {!tutorial && (
+          <section className={`sales reveal ${at(STAGE.build)}`} style={delay(100)} aria-label="First-week sales">
+            <div className="sales-head">
+              <div className="eyebrow">FIRST-WEEK SALES</div>
+              <b className="sales-total">{formatMoney(review.sales.total)}</b>
+            </div>
+            <p className="sales-math">
+              Score {review.score} earns {formatMoney(Math.round(review.sales.base))}
+              {' · '}hype {run.hype} sells ×{review.sales.hypeMultiplier.toFixed(2)}
+              {' · '}{run.concept.genre} fans ×{review.sales.marketMultiplier.toFixed(2)}
+            </p>
+            <p className="sales-account">
+              If you keep going, your revenue account opens at <b>{formatMoney(openingAccount(run))}</b>
+              {run.money > 0 ? ` (${formatMoney(review.sales.total)} in sales + ${formatMoney(run.money)} you had left)` : ''}. Sales
+              pay the team, and they fade every sprint unless you release updates.
+            </p>
+          </section>
+        )}
+
         {tutorial && (
           <section className={`happened reveal ${at(STAGE.build)}`} style={delay(150)} aria-label="What just happened">
             <div className="eyebrow">WHAT JUST HAPPENED</div>
@@ -201,13 +229,32 @@ export default function ReviewScreen() {
               OPEN THE STUDIO
               <span>start your first full run</span>
             </button>
-          ) : (
+          ) : tutorial ? (
             <button ref={primaryRef} type="button" className="cta" disabled={!armed} onClick={newRun}>
-              {tutorial ? 'TRY AGAIN' : 'NEW RUN'}
+              TRY AGAIN
               <span>same concept, fresh seed</span>
             </button>
+          ) : (
+            <>
+              {complete && (
+                <p className="complete-note">
+                  <b>COMPLETE.</b> Every feature polished, no bugs, every promise kept. Retire now to stamp it (+{COMPLETE_BONUS} legacy),
+                  or keep updating.
+                </p>
+              )}
+              <div className="what-next">
+              <button ref={primaryRef} type="button" className="cta" disabled={!armed} onClick={launchUpdates}>
+                LAUNCH UPDATES
+                <span>keep developing · sales pay the team</span>
+              </button>
+              <button type="button" className="cta cta-quiet" disabled={!armed} onClick={retire}>
+                RETIRE GAME
+                <span>end the run · your launch score is final</span>
+              </button>
+              </div>
+            </>
           )}
-          {!(tutorial && passed) && (
+          {tutorial && !passed && (
             <button type="button" className="ghost" disabled={!armed} onClick={editConcept}>
               Change concept
             </button>

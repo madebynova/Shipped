@@ -1,7 +1,7 @@
 Fonts bundled with SHIPPED (latin subsets, variable weight). All three are licensed under the SIL Open Font License 1.1.
 
 - Inter (c) The Inter Project Authors, https://github.com/rsms/inter
-- Pixelify Sans (c) The Pixelify Sans Project Authors, https://github.com/eifetx/Pixelify-Sans
+- Space Grotesk (c) The Space Grotesk Project Authors, https://github.com/floriankarsten/space-grotesk
 - JetBrains Mono (c) The JetBrains Mono Project Authors, https://github.com/JetBrains/JetBrainsMono
 
 ================ Inter license ================
@@ -99,8 +99,8 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 
-================ Pixelify Sans license ================
-Copyright 2021 The Pixelify Sans Project Authors (https://github.com/eifetx/Pixelify-Sans)
+================ Space Grotesk license ================
+Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

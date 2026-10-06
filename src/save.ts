@@ -1,5 +1,6 @@
 import { DEFAULT_THEME, isThemeId } from './themes'
 import type { ThemeId } from './themes'
+import { bandFor } from './engine'
 import type { Genre, ReviewBand, RunKind } from './engine'
 
 // Everything SHIPPED remembers between visits, in one small JSON blob in localStorage.
@@ -10,20 +11,27 @@ import type { Genre, ReviewBand, RunKind } from './engine'
 // Unknown or invalid fields fall back to safe defaults; they never crash the game.
 
 export const SAVE_KEY = 'shipped:save'
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2 // 2: archive entries carry a legacy score as well as the launch score
 export const MAX_ARCHIVE = 30
 
 export interface ArchiveEntry {
   id: string
   title: string
   genre: Genre
+  /** The LAUNCH score: the review at ship. It is the first impression and it never changes. */
   score: number
+  /** The band of the launch score. */
   band: ReviewBand
   /** Sprint the game shipped in. */
   sprint: number
   kind: RunKind
   /** ISO date string. */
   date: string
+  /** The LEGACY score: where the game's reputation ended up after live updates. Equal to `score` if it never got any. */
+  legacyScore: number
+  legacyBand: ReviewBand
+  /** The game earned the COMPLETE stamp: every feature polished, no bugs, no broken promises. */
+  complete: boolean
 }
 
 export interface SaveData {
@@ -57,12 +65,22 @@ function parseEntry(raw: unknown, index: number): ArchiveEntry | null {
   const title = typeof raw.title === 'string' ? raw.title.trim() : ''
   const score = typeof raw.score === 'number' && Number.isFinite(raw.score) ? Math.round(raw.score) : null
   if (!title || score === null) return null
+  const launch = Math.max(0, Math.min(100, score))
+  // Older saves (v0.0.2 and before) have no legacy fields: those games were never updated, so the
+  // legacy score is simply the launch score.
+  const legacy =
+    typeof raw.legacyScore === 'number' && Number.isFinite(raw.legacyScore)
+      ? Math.max(0, Math.min(100, Math.round(raw.legacyScore)))
+      : launch
   return {
     id: typeof raw.id === 'string' && raw.id ? raw.id : `legacy-${index}`,
     title: title.slice(0, 60),
     genre: GENRES.includes(raw.genre as Genre) ? (raw.genre as Genre) : 'Action',
-    score: Math.max(0, Math.min(100, score)),
+    score: launch,
     band: BANDS.includes(raw.band as ReviewBand) ? (raw.band as ReviewBand) : 'ROUGH',
+    legacyScore: legacy,
+    legacyBand: BANDS.includes(raw.legacyBand as ReviewBand) ? (raw.legacyBand as ReviewBand) : bandFor(legacy),
+    complete: raw.complete === true,
     sprint: typeof raw.sprint === 'number' && raw.sprint >= 1 ? Math.floor(raw.sprint) : 1,
     // Older entries have no kind: they were full games.
     kind: raw.kind === 'tutorial' ? 'tutorial' : 'full',
@@ -127,4 +145,24 @@ export function writeSave(save: SaveData, storage: StorageLike | null = browserS
 /** Newest first, capped. */
 export function addArchiveEntry(save: SaveData, entry: ArchiveEntry): SaveData {
   return { ...save, archive: [entry, ...save.archive].slice(0, MAX_ARCHIVE) }
+}
+
+/**
+ * Update the LEGACY half of an entry (after a release, or when the game is retired). The launch score, band
+ * and everything else on the entry are left exactly as they were: the first impression is permanent.
+ */
+export function updateArchiveLegacy(
+  save: SaveData,
+  id: string,
+  legacy: Pick<ArchiveEntry, 'legacyScore' | 'legacyBand' | 'complete'>,
+): SaveData {
+  if (!save.archive.some((entry) => entry.id === id)) return save
+  return {
+    ...save,
+    archive: save.archive.map((entry) =>
+      entry.id === id
+        ? { ...entry, legacyScore: legacy.legacyScore, legacyBand: legacy.legacyBand, complete: legacy.complete }
+        : entry,
+    ),
+  }
 }
