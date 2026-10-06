@@ -7,4 +7,4 @@ dist
 *.log
 .vite
 coverage
-.claude/settings.local.json
+.claude/
