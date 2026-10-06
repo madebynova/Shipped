@@ -6,13 +6,21 @@ export function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 }
 
-/** Briefly glow an element's outline. */
-export function glow(el: HTMLElement | null, rgb: string, spread = 10, ms = 700): void {
+/** Turn "var(--green)" into the colour it currently resolves to, so glows follow the active theme. */
+function resolveColor(el: HTMLElement, color: string): string {
+  const match = /^var\((--[\w-]+)\)$/.exec(color)
+  if (!match) return color
+  return getComputedStyle(el).getPropertyValue(match[1]).trim() || 'currentColor'
+}
+
+/** Briefly glow an element's outline. `color` is any CSS colour or a theme variable like "var(--green)". */
+export function glow(el: HTMLElement | null, color: string, spread = 10, ms = 700): void {
   if (!el || prefersReducedMotion() || !el.animate) return
+  const c = resolveColor(el, color)
   el.animate(
     [
-      { boxShadow: `0 0 0 0 rgba(${rgb}, 0.65)` },
-      { boxShadow: `0 0 0 ${spread}px rgba(${rgb}, 0)` },
+      { boxShadow: `0 0 0 0 color-mix(in srgb, ${c} 65%, transparent)` },
+      { boxShadow: `0 0 0 ${spread}px color-mix(in srgb, ${c} 0%, transparent)` },
     ],
     { duration: ms, easing: 'ease-out' },
   )
@@ -53,17 +61,19 @@ interface AnimatedNumberProps {
   from?: number
   duration?: number
   format?: (n: number) => string
+  /** Jump straight to the value (used when the player skips an animation). */
+  instant?: boolean
 }
 
 /** A number that eases to its new value instead of snapping. */
-export function AnimatedNumber({ value, from, duration = 380, format }: AnimatedNumberProps) {
+export function AnimatedNumber({ value, from, duration = 380, format, instant = false }: AnimatedNumberProps) {
   const [display, setDisplay] = useState(from ?? value)
   const shown = useRef(from ?? value)
 
   useEffect(() => {
     const start = shown.current
     if (start === value) return
-    if (prefersReducedMotion()) {
+    if (instant || prefersReducedMotion()) {
       shown.current = value
       setDisplay(value)
       return
@@ -79,7 +89,7 @@ export function AnimatedNumber({ value, from, duration = 380, format }: Animated
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [value, duration])
+  }, [value, duration, instant])
 
   const rounded = Math.round(display)
   return <>{format ? format(rounded) : rounded}</>

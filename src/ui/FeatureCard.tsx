@@ -3,11 +3,14 @@ import type { RefObject } from 'react'
 import { POLISHED_AT, buildCost } from '../engine'
 import type { ActionPreview, ActionType, Feature } from '../engine'
 import { signed } from './format'
+import { HELP } from './help'
+import { FeatureIcon } from './icons'
 import { glow, useOnChange } from './motion'
+import Tooltip from './Tooltip'
 
 interface Props {
   feature: Feature
-  /** Keyboard number (1-6) used while choosing a target. */
+  /** Keyboard number (1-6) used while choosing a target. Also the card's collector number. */
   hotkey: number
   /** The action waiting for a target, or null. */
   targeting: ActionType | null
@@ -33,6 +36,7 @@ function previewLine(type: ActionType, p: ActionPreview, feature: Feature): stri
   return `Quality ${before.quality} → ${after.quality}${state}${bugs}${scope}`
 }
 
+/** A feature, drawn like a collectible card: art strip, name plate, stats. */
 export default function FeatureCard({ feature, hotkey, targeting, blockedReason, preview, onPick }: Props) {
   const ref = useRef<HTMLElement>(null)
   const cost = buildCost(feature)
@@ -41,36 +45,50 @@ export default function FeatureCard({ feature, hotkey, targeting, blockedReason,
   const pickable = picking && blockedReason === null
 
   // Visible reaction when the feature changes state or moves forward.
-  useOnChange(feature.state, () => glow(ref.current, feature.state === 'POLISHED' ? '255, 213, 106' : '90, 169, 255', 14, 900))
-  useOnChange(`${feature.progress}/${feature.quality}`, () => glow(ref.current, '255, 178, 36', 6, 600))
+  useOnChange(feature.state, () =>
+    glow(ref.current, feature.state === 'POLISHED' ? 'var(--gold)' : 'var(--blue)', 14, 900),
+  )
+  useOnChange(`${feature.progress}/${feature.quality}`, () => glow(ref.current, 'var(--accent)', 6, 600))
 
   const body = (
     <>
-      <div className="card-head">
-        <h3 className="card-name">{feature.name}</h3>
+      <div className="card-art">
+        <span className="card-no">Nº {String(hotkey).padStart(2, '0')}</span>
+        <FeatureIcon id={feature.id} className="card-glyph" />
+        <span className="medal">
+          <FeatureIcon id={feature.id} />
+        </span>
         <span className={`badge badge-${feature.state.toLowerCase()}`}>{feature.state}</span>
       </div>
-      <p className="card-desc">{feature.description}</p>
 
-      <div className="card-meter">
+      <div className="card-body">
+        <h3 className="card-name">{feature.name}</h3>
+        <p className="card-desc">{feature.description}</p>
+      </div>
+
+      <div className="card-stats">
         <div className="card-meter-row">
-          <span className="pips" aria-label={`Complexity ${feature.complexity} of 3`}>
-            {[1, 2, 3].map((n) => (
-              <i key={n} className={n <= feature.complexity ? 'on' : ''} />
-            ))}
-            <em>COMPLEXITY</em>
-          </span>
-          <span className="card-figure">
-            {built ? (
-              <>
-                QUALITY <b>{feature.quality}</b>
-              </>
-            ) : (
-              <>
-                BUILT <b>{feature.progress}</b>/{cost}
-              </>
-            )}
-          </span>
+          <Tooltip text={HELP.complexity} focusable={!picking} className="gems-wrap">
+            <span className="gems" aria-label={`Complexity ${feature.complexity} of 3`}>
+              {[1, 2, 3].map((n) => (
+                <i key={n} className={n <= feature.complexity ? 'on' : ''} />
+              ))}
+              <em>COMPLEXITY</em>
+            </span>
+          </Tooltip>
+          <Tooltip text={built ? HELP.quality : HELP.progress} align="end" focusable={!picking}>
+            <span className="card-figure">
+              {built ? (
+                <>
+                  QUALITY <b>{feature.quality}</b>
+                </>
+              ) : (
+                <>
+                  BUILT <b>{feature.progress}</b>/{cost}
+                </>
+              )}
+            </span>
+          </Tooltip>
         </div>
         <div className={`bar ${built ? 'bar-quality' : 'bar-progress'}`} aria-hidden="true">
           <i style={{ width: `${built ? feature.quality : (feature.progress / cost) * 100}%` }} />

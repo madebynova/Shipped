@@ -8,7 +8,9 @@ import {
 } from '../engine'
 import type { Action, ActionType, HistoryEvent, RunState } from '../engine'
 import { formatMoney, signed } from './format'
+import { HELP } from './help'
 import { targetsFor } from './targets'
+import Tooltip from './Tooltip'
 
 interface ActionDef {
   type: ActionType
@@ -133,9 +135,9 @@ export default function ActionPanel({ run, pending, onChoose, onCloseSprint }: P
     <section className="panel actions" aria-label="Sprint actions">
       <header className="panel-head">
         <div className="eyebrow">THIS SPRINT</div>
-        <div className="slots-left">
+        <Tooltip as="div" className="slots-left" align="end" text={HELP.slots}>
           <b>{run.actionsLeft}</b> of {SLOTS_PER_SPRINT} slots left
-        </div>
+        </Tooltip>
       </header>
 
       <Slots run={run} />
@@ -178,7 +180,9 @@ export default function ActionPanel({ run, pending, onChoose, onCloseSprint }: P
           </div>
 
           <p className="end-hint">
-            <span className="eyebrow">WHEN THE SPRINT ENDS</span>
+            <Tooltip text={HELP.endHint} placement="top">
+              <span className="eyebrow">WHEN THE SPRINT ENDS</span>
+            </Tooltip>
             {finalSprint ? (
               <span>The deadline hits. The game ships.</span>
             ) : (

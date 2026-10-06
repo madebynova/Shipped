@@ -1,6 +1,8 @@
 import type { FormEvent, KeyboardEvent } from 'react'
 import { GENRES } from '../content/genres'
+import { TUTORIAL_PASS_SCORE, TUTORIAL_RUN, TOTAL_SPRINTS } from '../engine'
 import type { Concept } from '../engine'
+import Archive from './Archive'
 import { useGameStore } from './store'
 
 const EXAMPLE: Concept = {
@@ -16,7 +18,10 @@ export default function ConceptScreen() {
   const concept = useGameStore((s) => s.concept)
   const setConcept = useGameStore((s) => s.setConcept)
   const startRun = useGameStore((s) => s.startRun)
+  const save = useGameStore((s) => s.save)
 
+  // Until the tutorial is passed, every run is "MY FIRST GAME".
+  const tutorial = !save.tutorialCompleted
   const ready = concept.title.trim().length > 0 && concept.idea.trim().length > 0
 
   const submit = (e: FormEvent) => {
@@ -31,28 +36,45 @@ export default function ConceptScreen() {
   return (
     <div className="concept">
       <section className="hero">
-        <div className="eyebrow">VERSION 0.0.1</div>
+        <div className="eyebrow">{tutorial ? 'MY FIRST GAME' : 'VERSION 0.0.2'}</div>
         <h1 className="logo">SHIPPED</h1>
         <p className="tagline">Make a game. Decide when to ship it.</p>
-        <ul className="rules">
-          <li>
-            <b>8 sprints.</b> Three actions each.
-          </li>
-          <li>
-            <b>6 features,</b> time for maybe four.
-          </li>
-          <li>
-            <b>Ship from sprint 4,</b> or be forced at sprint 8.
-          </li>
-        </ul>
+        {tutorial ? (
+          <ul className="rules">
+            <li>
+              <b>{TUTORIAL_RUN.totalSprints} sprints.</b> Three actions each.
+            </li>
+            <li>
+              <b>{TUTORIAL_RUN.featureIds?.length} feature cards,</b> and the team to guide you.
+            </li>
+            <li>
+              <b>Ship with {TUTORIAL_PASS_SCORE}+</b> to open your studio.
+            </li>
+          </ul>
+        ) : (
+          <ul className="rules">
+            <li>
+              <b>{TOTAL_SPRINTS} sprints.</b> Three actions each.
+            </li>
+            <li>
+              <b>6 features,</b> time for maybe four.
+            </li>
+            <li>
+              <b>Ship from sprint 4,</b> or be forced at sprint {TOTAL_SPRINTS}.
+            </li>
+          </ul>
+        )}
+        <Archive entries={save.archive} />
       </section>
 
       <form className="panel concept-form" onSubmit={submit}>
         <div className="form-head">
-          <h2 className="eyebrow">NEW GAME CONCEPT</h2>
-          <button type="button" className="link" onClick={() => setConcept(EXAMPLE)}>
-            use an example
-          </button>
+          <h2 className="eyebrow">{tutorial ? 'NAME YOUR FIRST GAME' : 'NEW GAME CONCEPT'}</h2>
+          {!tutorial && (
+            <button type="button" className="link" onClick={() => setConcept(EXAMPLE)}>
+              use an example
+            </button>
+          )}
         </div>
 
         <label className="field">
@@ -106,8 +128,14 @@ export default function ConceptScreen() {
         </fieldset>
 
         <button type="submit" className="cta" disabled={!ready}>
-          START DEVELOPMENT
-          <span>{ready ? 'sprint 1 of 8' : 'enter a title and an idea'}</span>
+          {tutorial ? 'START MY FIRST GAME' : 'START DEVELOPMENT'}
+          <span>
+            {ready
+              ? tutorial
+                ? `${TUTORIAL_RUN.totalSprints} sprints · pass with ${TUTORIAL_PASS_SCORE}+`
+                : `sprint 1 of ${TOTAL_SPRINTS}`
+              : 'enter a title and an idea'}
+          </span>
         </button>
       </form>
     </div>

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { SHIP_UNLOCK_SPRINT, canShip, getScope, sprintUpkeep } from '../engine'
 import type { RunState } from '../engine'
 import { formatMoney, moneyStatus } from './format'
+import { HELP } from './help'
+import Tooltip from './Tooltip'
 
 interface Props {
   run: RunState
@@ -21,10 +23,12 @@ export default function ShipBar({ run, onShip }: Props) {
   if (!open) {
     return (
       <footer className="shipbar locked">
-        <button type="button" className="ship-btn" disabled>
-          <span className="lock" aria-hidden="true" />
-          SHIP GAME
-        </button>
+        <Tooltip text={HELP.shipLocked} placement="top" className="ship-tip">
+          <button type="button" className="ship-btn" disabled>
+            <span className="lock" aria-hidden="true" />
+            SHIP GAME
+          </button>
+        </Tooltip>
         <p className="ship-copy">
           <b>Shipping unlocks in sprint {SHIP_UNLOCK_SPRINT}.</b> Until then you are building toward something shippable.
         </p>
@@ -35,8 +39,8 @@ export default function ShipBar({ run, onShip }: Props) {
   const built = run.features.filter((f) => f.state !== 'PLANNED').length
   const polished = run.features.filter((f) => f.state === 'POLISHED').length
   const sprintsLeft = run.config.totalSprints - run.sprint
-  const status = moneyStatus(run.money, sprintUpkeep(getScope(run.features).level))
-  const urgency = run.sprint >= 7 ? 'late' : run.sprint >= 6 ? 'mid' : 'early'
+  const status = moneyStatus(run.money, sprintUpkeep(getScope(run.features).level), sprintsLeft)
+  const urgency = sprintsLeft <= 1 ? 'late' : sprintsLeft <= 2 ? 'mid' : 'early'
 
   return (
     <footer className={`shipbar open urgency-${urgency}`}>
@@ -56,9 +60,11 @@ export default function ShipBar({ run, onShip }: Props) {
         </div>
       ) : (
         <>
-          <button type="button" className="ship-btn" onClick={() => setConfirming(true)}>
-            SHIP GAME
-          </button>
+          <Tooltip text={HELP.shipOpen} placement="top" focusable={false} className="ship-tip">
+            <button type="button" className="ship-btn" onClick={() => setConfirming(true)}>
+              SHIP GAME
+            </button>
+          </Tooltip>
           <div className="ship-copy">
             <p className="ship-tagline">
               {sprintsLeft === 0

@@ -1,4 +1,6 @@
 import { SHIP_UNLOCK_SPRINT } from '../engine'
+import { HELP } from './help'
+import Tooltip from './Tooltip'
 
 interface Props {
   sprint: number
@@ -9,16 +11,17 @@ interface Props {
 /** "SPRINT 3 / 8" plus a segmented track that shows where shipping opens and the deadline. */
 export default function SprintTrack({ sprint, total }: Props) {
   const segments = Array.from({ length: total }, (_, i) => i + 1)
+  const left = total - sprint
   const note =
     sprint < SHIP_UNLOCK_SPRINT
       ? `Shipping unlocks in sprint ${SHIP_UNLOCK_SPRINT}`
       : sprint < total
-        ? `Ship window open · deadline in ${total - sprint} ${total - sprint === 1 ? 'sprint' : 'sprints'}`
+        ? `Ship window open · deadline in ${left} ${left === 1 ? 'sprint' : 'sprints'}`
         : 'Final sprint · the game ships after your last action'
 
   return (
-    <div className="sprint-track" aria-label={`Sprint ${sprint} of ${total}`}>
-      <div className="sprint-label">
+    <Tooltip as="div" className="sprint-track" align="end" text={HELP.sprint(total)}>
+      <div className="sprint-label" aria-label={`Sprint ${sprint} of ${total}`}>
         <span className="sprint-word">SPRINT</span>
         <span key={sprint} className="sprint-num">
           {sprint}
@@ -40,6 +43,6 @@ export default function SprintTrack({ sprint, total }: Props) {
         ))}
       </div>
       <div className="sprint-note">{note}</div>
-    </div>
+    </Tooltip>
   )
 }

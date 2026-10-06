@@ -1,16 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { moraleTier, stability } from '../engine'
 import { formatMoney, hypeStatus, moneyStatus, moraleMood, signed, stabilityMood } from './format'
 import type { Mood } from './format'
+import { HELP } from './help'
 import { AnimatedNumber, glow, shake, useOnChange } from './motion'
+import { TipBubble } from './Tooltip'
 
 type Kind = 'money' | 'morale' | 'hype' | 'bugs'
 
 const GLOW: Record<Kind, string> = {
-  money: '52, 211, 153',
-  morale: '90, 169, 255',
-  hype: '183, 139, 255',
-  bugs: '255, 84, 112',
+  money: 'var(--green)',
+  morale: 'var(--blue)',
+  hype: 'var(--violet)',
+  bugs: 'var(--red)',
 }
 
 interface TileProps {
@@ -23,10 +26,14 @@ interface TileProps {
   format?: (n: number) => string
   /** 0-100: draws a hairline underline. */
   gauge?: number
+  /** The friendly one-or-two sentence explanation shown on hover / focus. */
+  tip: ReactNode
+  tipAlign?: 'start' | 'end'
 }
 
-function Tile({ kind, label, value, status, risingIsGood, format, gauge }: TileProps) {
+function Tile({ kind, label, value, status, risingIsGood, format, gauge, tip, tipAlign = 'start' }: TileProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const tipId = useId()
   const [delta, setDelta] = useState<{ n: number; id: number } | null>(null)
   const counter = useRef(0)
 
@@ -51,7 +58,12 @@ function Tile({ kind, label, value, status, risingIsGood, format, gauge }: TileP
         : 'bad'
 
   return (
-    <div ref={ref} className={`tile tile-${kind} mood-${status.mood}`}>
+    <div
+      ref={ref}
+      className={`tile tile-${kind} mood-${status.mood} has-tip`}
+      tabIndex={0}
+      aria-describedby={tipId}
+    >
       <div className="tile-label">{label}</div>
       <div className="tile-value">
         <AnimatedNumber value={value} format={format} />
@@ -67,6 +79,7 @@ function Tile({ kind, label, value, status, risingIsGood, format, gauge }: TileP
           <i style={{ width: `${Math.max(0, Math.min(100, gauge))}%` }} />
         </div>
       )}
+      <TipBubble id={tipId} text={tip} align={tipAlign} />
     </div>
   )
 }
@@ -74,14 +87,16 @@ function Tile({ kind, label, value, status, risingIsGood, format, gauge }: TileP
 interface Props {
   /** What closing a sprint costs right now; it grows with scope. */
   upkeep: number
+  /** Sprint-closes left before the game ships. */
+  sprintsLeft: number
   money: number
   morale: number
   hype: number
   bugs: number
 }
 
-/** The four visible resources. Compact, readable, no giant meters. */
-export default function ResourceBar({ upkeep, money, morale, hype, bugs }: Props) {
+/** The four visible resources. Compact, readable, no giant meters. Hover any for a one-liner. */
+export default function ResourceBar({ upkeep, sprintsLeft, money, morale, hype, bugs }: Props) {
   const tier = moraleTier(morale)
   const stable = stability(bugs)
   return (
@@ -91,8 +106,9 @@ export default function ResourceBar({ upkeep, money, morale, hype, bugs }: Props
         label="MONEY"
         value={money}
         format={formatMoney}
-        status={moneyStatus(money, upkeep)}
+        status={moneyStatus(money, upkeep, sprintsLeft)}
         risingIsGood
+        tip={HELP.money(upkeep)}
       />
       <Tile
         kind="morale"
@@ -101,6 +117,7 @@ export default function ResourceBar({ upkeep, money, morale, hype, bugs }: Props
         status={{ label: tier, mood: moraleMood(tier) }}
         risingIsGood
         gauge={morale}
+        tip={HELP.morale}
       />
       <Tile
         kind="hype"
@@ -109,6 +126,7 @@ export default function ResourceBar({ upkeep, money, morale, hype, bugs }: Props
         status={hypeStatus(hype)}
         risingIsGood={null}
         gauge={hype}
+        tip={HELP.hype}
       />
       <Tile
         kind="bugs"
@@ -116,6 +134,8 @@ export default function ResourceBar({ upkeep, money, morale, hype, bugs }: Props
         value={bugs}
         status={{ label: stable, mood: stabilityMood(stable) }}
         risingIsGood={false}
+        tip={HELP.bugs}
+        tipAlign="end"
       />
     </section>
   )

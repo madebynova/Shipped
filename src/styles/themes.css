@@ -1,0 +1,259 @@
+/* ==========================================================================
+   SHIPPED themes. Every colour in the game is one of these variables, so a theme is a pure
+   variable swap: no component knows which theme is active.
+
+   The selectors are [data-theme='…'] (not :root-only) so the theme picker can preview a
+   theme on a small swatch element without touching the page. index.html applies the saved
+   theme before first paint. themes.test.ts checks every theme defines every token and
+   passes WCAG contrast for text and the semantic colours.
+
+   Tokens
+     surfaces   bg  bg-2  panel  panel-2  line  line-2
+     text       text  text-2  dim  faint
+     accent     accent  accent-2  on-accent        (the primary call to action)
+     ship       ship  ship-2  on-ship              (the SHIP GAME button)
+     semantic   green  red  blue  violet  teal  gold  orange  pink
+     light      glow-a  glow-b  shadow  hl  scrim
+     shape      radius  font-display  scheme
+   ========================================================================== */
+
+/* MIDNIGHT (default): deep blue-black, cool icy accents ----------------------- */
+:root,
+[data-theme='midnight'] {
+  --bg: #070b14;
+  --bg-2: #0b1120;
+  --panel: #101828;
+  --panel-2: #172238;
+  --line: #1f2c45;
+  --line-2: #2d3e5f;
+
+  --text: #eaf0fb;
+  --text-2: #bccade;
+  --dim: #8e9cb9;
+  --faint: #6a7a9d;
+
+  --accent: #5cc8ff;
+  --accent-2: #3d8bff;
+  --on-accent: #04121f;
+
+  --ship: #ff7a55;
+  --ship-2: #ff5a3c;
+  --on-ship: #1f0903;
+
+  --green: #3ddc97;
+  --red: #ff6b83;
+  --blue: #6aaeff;
+  --violet: #b99aff;
+  --teal: #35d8c6;
+  --gold: #ffd36e;
+  --orange: #ff9d5c;
+  --pink: #ff74b1;
+
+  --glow-a: #3b82f6;
+  --glow-b: #8b5cf6;
+  --shadow: #000000;
+  --hl: #ffffff;
+  --scrim: #02050c;
+
+  --radius: 14px;
+  --font-display: 'Pixelify Sans', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
+  --heading-glow: none;
+  color-scheme: dark;
+}
+
+/* TERMINAL: phosphor green on black, everything is a console ------------------ */
+[data-theme='terminal'] {
+  --bg: #010603;
+  --bg-2: #03100a;
+  --panel: #061a0f;
+  --panel-2: #0a2616;
+  --line: #0f3a22;
+  --line-2: #1a5a36;
+
+  --text: #d4ffe2;
+  --text-2: #96f2b8;
+  --dim: #5cc486;
+  --faint: #3f9a66;
+
+  --accent: #3dff85;
+  --accent-2: #00d65f;
+  --on-accent: #01130a;
+
+  --ship: #ffb81f;
+  --ship-2: #ff9a00;
+  --on-ship: #1a0f00;
+
+  --green: #3dff85;
+  --red: #ff6a6a;
+  --blue: #66d4ff;
+  --violet: #d2a2ff;
+  --teal: #3df0d6;
+  --gold: #ffe45c;
+  --orange: #ffa94d;
+  --pink: #ff8fd0;
+
+  --glow-a: #00ff6a;
+  --glow-b: #00a8ff;
+  --shadow: #000000;
+  --hl: #aaffcc;
+  --scrim: #000000;
+
+  --radius: 4px;
+  --font-display: 'JetBrains Mono', 'Cascadia Mono', Consolas, ui-monospace, monospace;
+  --heading-glow: 0 0 12px color-mix(in srgb, #3dff85 55%, transparent);
+  color-scheme: dark;
+}
+
+/* SUNSET: warm plum nights, orange and pink light ---------------------------- */
+[data-theme='sunset'] {
+  --bg: #150b13;
+  --bg-2: #1c101a;
+  --panel: #251527;
+  --panel-2: #301c33;
+  --line: #432845;
+  --line-2: #5d3a5e;
+
+  --text: #fff0e4;
+  --text-2: #f3cfba;
+  --dim: #c9a0ae;
+  --faint: #9d7086;
+
+  --accent: #ff8a3d;
+  --accent-2: #ff4f8b;
+  --on-accent: #220a05;
+
+  --ship: #ff6f91;
+  --ship-2: #ff4f78;
+  --on-ship: #2a0610;
+
+  --green: #86e3a8;
+  --red: #ff6b6b;
+  --blue: #80b8ff;
+  --violet: #cba0ff;
+  --teal: #5de0cc;
+  --gold: #ffd479;
+  --orange: #ff9a4d;
+  --pink: #ff7eb6;
+
+  --glow-a: #ff7a30;
+  --glow-b: #ff3d8b;
+  --shadow: #0a030a;
+  --hl: #ffe6d0;
+  --scrim: #0d050b;
+
+  --radius: 18px;
+  --font-display: 'Pixelify Sans', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
+  --heading-glow: none;
+  color-scheme: dark;
+}
+
+/* CLEAN PAPER: bright, high-contrast paper and ink ---------------------------- */
+[data-theme='paper'] {
+  --bg: #f3efe6;
+  --bg-2: #ebe6d9;
+  --panel: #fffdf8;
+  --panel-2: #f7f2e6;
+  --line: #d9d2bf;
+  --line-2: #b9b098;
+
+  --text: #16130d;
+  --text-2: #3b3629;
+  --dim: #5e5744;
+  --faint: #7a7260;
+
+  --accent: #1d4fd8;
+  --accent-2: #0f3aa8;
+  --on-accent: #ffffff;
+
+  --ship: #d4401f;
+  --ship-2: #b22d10;
+  --on-ship: #ffffff;
+
+  --green: #0a7a50;
+  --red: #c21f3f;
+  --blue: #1b5fd0;
+  --violet: #6a3dd0;
+  --teal: #0a7a70;
+  --gold: #8a6100;
+  --orange: #b0520a;
+  --pink: #b32670;
+
+  --glow-a: #ffd27a;
+  --glow-b: #9bb8ff;
+  --shadow: #3a3018;
+  --hl: #ffffff;
+  --scrim: #1a160c;
+
+  --radius: 12px;
+  --font-display: 'Inter', 'Segoe UI Variable Display', system-ui, sans-serif;
+  --heading-glow: none;
+  color-scheme: light;
+}
+
+/* MISSING TEXTURE: the magenta checkerboard every game dev knows ------------- */
+[data-theme='missing-texture'] {
+  --bg: #09050e;
+  --bg-2: #0e0817;
+  --panel: #150c20;
+  --panel-2: #1e1230;
+  --line: #2f1b47;
+  --line-2: #4d2c75;
+
+  --text: #fdeeff;
+  --text-2: #e6c8f2;
+  --dim: #b995d0;
+  --faint: #8d68ac;
+
+  --accent: #ff2bd6;
+  --accent-2: #c04bff;
+  --on-accent: #1a0016;
+
+  --ship: #ffe14a;
+  --ship-2: #ffc400;
+  --on-ship: #1a1300;
+
+  --green: #3dff9a;
+  --red: #ff5c3a;
+  --blue: #5eb2ff;
+  --violet: #bb8cff;
+  --teal: #2de6d3;
+  --gold: #ffe14a;
+  --orange: #ff9a3d;
+  --pink: #ff6bd6;
+
+  --glow-a: #ff2bd6;
+  --glow-b: #7a00ff;
+  --shadow: #000000;
+  --hl: #ffc2f5;
+  --scrim: #040208;
+
+  --radius: 0px;
+  --font-display: 'Pixelify Sans', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
+  --heading-glow: none;
+  color-scheme: dark;
+}
+
+/* Atmosphere: optional page-level flavour layered over the page for two themes. ---- */
+html[data-theme='terminal'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 2px,
+    color-mix(in srgb, #000 24%, transparent) 2px 3px
+  );
+}
+
+html[data-theme='missing-texture'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: conic-gradient(var(--accent) 25%, transparent 0 50%, var(--accent) 0 75%, transparent 0);
+  background-size: 56px 56px;
+}

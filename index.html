@@ -3,14 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0a0c10" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#070b14" />
     <meta name="description" content="SHIPPED — make a game, then decide when to ship it." />
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0c10'/%3E%3Cpath d='M9 22l4-12 4 7 2-4 4 9z' fill='%23ffb020'/%3E%3C/svg%3E"
     />
     <title>SHIPPED</title>
+    <!-- Apply the saved theme before first paint so there is never a flash of the wrong one.
+         The ids must match src/themes.ts (themes.test.ts enforces it). -->
+    <script>
+      (function () {
+        try {
+          var ids = ['midnight', 'terminal', 'sunset', 'paper', 'missing-texture'];
+          var raw = window.localStorage.getItem('shipped:save');
+          var theme = raw ? JSON.parse(raw).theme : null;
+          if (ids.indexOf(theme) !== -1) document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          /* storage blocked or save unreadable: the default theme applies */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

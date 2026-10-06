@@ -13,10 +13,20 @@ export function formatMoney(n: number): string {
 
 export type Mood = 'good' | 'warn' | 'bad' | 'neutral'
 
-/** `upkeep` is what closing a sprint costs right now (it grows with scope). */
-export function moneyStatus(money: number, upkeep: number): { label: string; mood: Mood } {
+/**
+ * What the player should know about their cash right now.
+ * `upkeep` is what closing a sprint costs at the current scope (it grows as the game does);
+ * `sprintsToDeadline` is how many more sprint-closes happen before the game ships.
+ */
+export function moneyStatus(
+  money: number,
+  upkeep: number,
+  sprintsToDeadline: number,
+): { label: string; mood: Mood } {
   if (money <= 0) return { label: 'BROKE: TEAM UNPAID', mood: 'bad' }
   const closes = Math.ceil(money / upkeep)
+  // Enough cash to reach the deadline at today's upkeep: the honest thing to say is "you're fine".
+  if (closes > sprintsToDeadline) return { label: 'COVERED TO THE DEADLINE', mood: 'good' }
   if (closes <= 1) return { label: 'BROKE AFTER THIS SPRINT', mood: 'bad' }
   if (closes <= 2) return { label: `BROKE IN ${closes} SPRINTS`, mood: 'warn' }
   return { label: `RUNWAY ${closes} SPRINTS`, mood: 'neutral' }

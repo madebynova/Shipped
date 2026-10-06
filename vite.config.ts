@@ -6,5 +6,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Vitest blanks out CSS by default. The theme tests read the real stylesheet, so let
+    // the theme file through.
+    css: { include: [/themes\.css/] },
   },
 })

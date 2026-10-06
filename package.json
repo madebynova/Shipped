@@ -1,7 +1,7 @@
 {
   "name": "shipped",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "SHIPPED — a browser strategy game about making a game and deciding when to ship it.",
   "type": "module",
   "scripts": {
